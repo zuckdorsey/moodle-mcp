@@ -1,255 +1,157 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/loyaniu-moodle-mcp-badge.png)](https://mseep.ai/app/loyaniu-moodle-mcp)
+<div align="center">
 
 # moodle-mcp
 
-> A **Model Context Protocol (MCP)** server that connects AI coding agents — Hermes, Claude Code, and OpenCode — to your Moodle LMS. Fetch assignments, grades, deadlines, and sync everything to Obsidian automatically.
+> **Model Context Protocol server for Moodle LMS** — connect Hermes, Claude Code, and OpenCode to your Moodle. Fetch assignments, grades, and deadlines, sync to Obsidian, and get WhatsApp alerts.
+
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![MCP](https://img.shields.io/badge/MCP-1.6%2B-7B68EE?style=flat-square)](https://modelcontextprotocol.io)
+[![MseeP.ai Security](https://mseep.net/pr/loyaniu-moodle-mcp-badge.png)](https://mseep.ai/app/loyaniu-moodle-mcp)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+
+[Overview](#overview) • [Features](#features) • [Quick Start](#quick-start) • [Configuration](#configuration) • [Agent Setup](#agent-setup) • [Tools](#tools) • [Obsidian Sync](#obsidian-sync)
+
+</div>
 
 ---
 
-## ✨ Features
+## Overview
 
-### 📚 Courses & Content
-| Tool | Description |
-|---|---|
-| `get_my_courses` | Get all courses the current user is enrolled in |
-| `get_course_content` | Get sections and modules for a specific course |
-| `search_course_materials` | Search across all course materials by query string |
-| `get_course_announcements` | Get announcements from course news forums |
-| `get_recent_activity` | Get recent activity across courses since a given time |
-| `get_course_updates` | Check for new materials or announcements added recently |
+`moodle-mcp` bridges the Moodle Web Services API with the [Model Context Protocol](https://modelcontextprotocol.io), so AI agents can act as your academic assistant. It was built for **Polibatam** (multi-class filtering) but works with any Moodle instance that has Web Services enabled.
 
-### 📝 Assignments & Deadlines
-| Tool | Description |
-|---|---|
-| `get_assignments` | Get assignments, optionally filtered by course or class slot |
-| `get_assignment_status` | Get submission and grading status for an assignment |
-| `get_upcoming_deadlines` | Upcoming deadlines sorted by due date |
-| `get_overdue_assignments` | Unsubmitted assignments past their due date |
-| `get_actionable_tasks` | Prioritized task list sorted by urgency |
-| `analyze_assignment` | Full analysis: status, requirements, materials, deadline |
-| `extract_assignment_requirements` | Extract deliverables and evaluation criteria |
-| `find_relevant_materials` | Find course content relevant to an assignment |
-| `decompose_task` | Break assignment into subtasks with critical path |
-| `create_implementation_plan` | Step-by-step plan with timeline, resources, milestones |
-| `submit_assignment_text` | Submit a text-based assignment answer |
-| `get_assignment_feedback` | Get feedback and rubric results for a submission |
+Fork of [loyaniu/moodle-mcp](https://github.com/loyaniu/moodle-mcp) — extended from 22 to **40 tools** with Obsidian sync, material downloads, submission tools, calendar integration, concurrent fetching, and semester auto-archive.
 
-### 📊 Grades & Progress
-| Tool | Description |
-|---|---|
-| `get_grades` | Grade overview for all courses, or detailed for one course |
-| `get_course_progress` | Completion progress for one or all courses |
-| `get_course_health` | Health check: progress, grades, unsubmitted/overdue counts |
-| `get_study_load` | Assignment distribution by week (spot heavy weeks) |
-| `get_submission_status_detail` | Detailed submission info and feedback |
-
-### 📅 Calendar & Events
-| Tool | Description |
-|---|---|
-| `get_upcoming_events` | Upcoming events from Moodle |
-| `create_calendar_event` | Create a personal reminder in the Moodle calendar |
-| `get_activity_completion` | Check completion status for a specific activity |
-| `mark_activity_complete` | Mark an activity as complete |
-
-### 🗂️ Aggregated Overviews
-| Tool | Description |
-|---|---|
-| `semester_dashboard` | Combined overview of courses, deadlines, and grades |
-| `daily_briefing` | Daily summary: overdue, today's deadlines, recent grades |
-| `weekly_review` | Weekly summary: submitted, graded, overdue, progress |
-| `ask_moodle` | Ask a natural language question, routed to the right data |
-
-### 🗒️ Obsidian Sync
-| Tool | Description |
-|---|---|
-| `sync_moodle_to_obsidian` | Sync dashboard, deadlines, grades, and course notes to Obsidian. **Auto-archives the previous semester** when courses change |
-| `export_deadlines_to_obsidian` | Export only deadline notes |
-| `export_course_outline` | Export a course's full outline as a note |
-| `list_course_material_files` | List all downloadable files in a course |
-| `download_course_materials` | Download all materials to Obsidian/Materials/ |
-| `download_assignment_attachments` | Download files attached to an assignment |
-
-### 🔄 Semester Auto-Archive
-
-When `sync_moodle_to_obsidian` detects that your Moodle courses have changed significantly (i.e., you moved to a new semester), it **automatically archives the previous semester's notes** before overwriting:
-
-```
-Obsidian Vault/Academic/
-  Moodle/                       ← always up-to-date (current semester)
-    .semester_courses.json      ← state file (hidden, tracks course IDs)
-    Dashboard.md
-    Deadlines.md
-    Grades.md
-    Courses/
-  Archive/
-    Semester-2026-07/           ← auto-created on semester rollover
-      Dashboard.md              ← snapshot of old semester
-      Courses/                  ← all old course notes preserved
-      Grades.md
-      Archive-README.md         ← log of what changed and when
-```
-
-**Trigger logic:** archive fires when >50% of known course IDs are replaced (or all are new). Minor changes (e.g., 1 course dropped/added) are ignored.
+> [!TIP]
+> Works with any Moodle LMS — just point `MOODLE_URL` at your instance. The Polibatam class filter (`MOODLE_MY_CLASS`) is optional.
 
 ---
 
-## 🚀 Quick Install
+## Features
 
-A single install script handles all supported CLI agents automatically:
+- **Assignments & deadlines** — filtered by class slot, sorted by urgency, with actionable task lists
+- **Grades & progress** — course health checks, study load, and completion tracking
+- **Course content & search** — sections, modules, materials, announcements, recent activity
+- **Obsidian sync** — one-command export of dashboards, deadlines, and course notes (with semester auto-archive)
+- **Material downloads** — list and download course files and assignment attachments
+- **Submissions** — submit text, check status, and read feedback
+- **Calendar** — upcoming events, create reminders (H-2), mark activities complete
+- **Agent-ready** — single `install-mcp.sh` for Hermes, Claude Code, and OpenCode
+
+---
+
+## Quick Start
+
+### One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/doomscrollsurvivor/moodle-mcp/main/scripts/install-mcp.sh | bash
+curl -fsSL https://raw.githubusercontent.com/zuckdorsey/moodle-mcp/main/scripts/install-mcp.sh | bash
 ```
 
-Or clone first and run locally:
+Auto-detects installed agents and configures each one. For a dry run:
 
 ```bash
-git clone https://github.com/doomscrollsurvivor/moodle-mcp.git
-cd moodle-mcp
-bash scripts/install-mcp.sh
+bash scripts/install-mcp.sh --dry-run
 ```
 
-The script detects which agents are installed and configures each one. See [scripts/install-mcp.sh](scripts/install-mcp.sh) for full details.
+### Verify
+
+```bash
+# Hermes (profile: akademik)
+hermes --profile akademik mcp test moodle
+# → ✓ Connected  ✓ Tools discovered: 40
+
+# Claude Code
+claude mcp list
+
+# Run tests
+PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
+```
+
+> [!NOTE]
+> Prefer local source over PyPI when developing — the launcher sets `PYTHONPATH` to `src/` automatically.
 
 ---
 
-## ⚙️ Manual Setup
+## Configuration
 
-### 1. Prerequisites
+### 1. Get your Moodle token
 
-- Python ≥ 3.10
-- [`uv`](https://docs.astral.sh/uv/) (recommended) or `pip`
-- A Moodle account with **Web Services** enabled
-
-### 2. Get Your Moodle Token
-
-1. Go to `https://<your-moodle-url>/user/managetoken.php`
-2. Find the row with **Moodle mobile web service** in the `Service` column
+1. Open `https://<your-moodle>/user/managetoken.php`
+2. Find the row with **Moodle mobile web service** in `Service`
 3. Copy the token
 
-### 3. Create `.env`
+### 2. Create `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
-
 ```dotenv
-MOODLE_URL=https://your-moodle-url.example.com/webservice/rest/server.php
+MOODLE_URL=https://your-moodle.example.com/webservice/rest/server.php
 MOODLE_TOKEN=your_token_here
 
-# Optional — filter assignments to your own class (Polibatam multi-class fix)
+# Optional — Polibatam class-slot filter (e.g. Pagi C, Siang A)
 MOODLE_MY_CLASS=Pagi C
 
-# Optional — custom Obsidian vault path
-OBSIDIAN_VAULT_PATH=/home/yourname/Obsidian Vault
+# Optional — custom vault path
+OBSIDIAN_VAULT_PATH=/home/you/Obsidian Vault
 ```
 
-### 4. Install the Package
+| Variable | Required | Description |
+|---|---|---|
+| `MOODLE_URL` | yes | Moodle REST endpoint (`.../webservice/rest/server.php`) |
+| `MOODLE_TOKEN` | yes | Mobile web service token |
+| `MOODLE_MY_CLASS` | no | Regex filter for multi-class assignment titles |
+| `OBSIDIAN_VAULT_PATH` | no | Vault root (default: `~/Obsidian Vault`) |
+
+### 3. Install package
 
 ```bash
-# With uv (recommended)
+# with uv (recommended)
 uv pip install -e .
 
-# Or with pip
+# or pip
 pip install -e .
 ```
 
-### 5. Configure Your Agent
-
-Jump to the section for your agent:
-- [Hermes Agent](#hermes-agent)
-- [Claude Code](#claude-code)
-- [OpenCode](#opencode)
-- [Claude Desktop / Cursor (GUI)](#claude-desktop--cursor)
+> [!WARNING]
+> Never commit `.env` — it contains a token with full API access. It is already in `.gitignore`.
 
 ---
 
-## 🤖 Hermes Agent
+## Agent Setup
 
-Hermes uses a local Python launcher script for MCP. This is the recommended setup for the `akademik` profile.
+Pick your agent — all use the same local launcher at `scripts/moodle_mcp_local_launch.py`.
 
-### Auto-configure (recommended)
+### Hermes Agent (recommended)
 
 ```bash
 bash scripts/install-mcp.sh --agent hermes --profile akademik
 ```
 
-### Manual configure
-
-1. Copy the launcher:
-
-```bash
-mkdir -p ~/.hermes/scripts
-cp scripts/moodle_mcp_local_launch.py ~/.hermes/scripts/
-```
-
-2. Add to `~/.hermes/profiles/akademik/config.yaml` (or `~/.hermes/config.yaml` for default):
+Manual (`~/.hermes/profiles/akademik/config.yaml`):
 
 ```yaml
-mcpServers:
+mcp_servers:
   moodle:
-    command: python3
-    args:
-      - /home/<you>/.hermes/scripts/moodle_mcp_local_launch.py
+    command: /home/you/Programming/Python/moodle-mcp/.venv/bin/python
+    args: [/home/you/Programming/Python/moodle-mcp/scripts/moodle_mcp_local_launch.py]
     env:
-      MOODLE_URL: "https://your-moodle-url/webservice/rest/server.php"
-      MOODLE_TOKEN: "your_token_here"
+      MOODLE_URL: ${MOODLE_URL}
+      MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_MY_CLASS: "Pagi C"
-      OBSIDIAN_VAULT_PATH: "/home/<you>/Obsidian Vault"
+      OBSIDIAN_VAULT_PATH: "/home/you/Obsidian Vault"
 ```
 
-3. Verify:
-
-```bash
-hermes --profile akademik mcp test moodle
-```
-
-Expected output: `✓ Connected  ✓ Tools discovered: 40`
-
----
-
-## 🤖 Claude Code
-
-Claude Code reads MCP config from `.claude/settings.json` (project-level) or `~/.claude/settings.json` (global).
-
-### Auto-configure
+### Claude Code
 
 ```bash
 bash scripts/install-mcp.sh --agent claude-code
+# or manually
+claude mcp add -s user moodle-mcp -- python3 /path/to/moodle-mcp/scripts/moodle_mcp_local_launch.py
 ```
 
-### Manual configure — Global
-
-```bash
-claude mcp add -s user moodle-mcp -- python3 /path/to/moodle-mcp/src/moodle_mcp/server.py
-```
-
-Then set env vars by editing `~/.claude.json` (or use the script).
-
-### Manual configure — JSON
-
-Add to `~/.claude/settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "moodle-mcp": {
-      "command": "uvx",
-      "args": ["moodle-mcp"],
-      "env": {
-        "MOODLE_URL": "https://your-moodle-url/webservice/rest/server.php",
-        "MOODLE_TOKEN": "your_token_here",
-        "MOODLE_MY_CLASS": "Pagi C",
-        "OBSIDIAN_VAULT_PATH": "/home/<you>/Obsidian Vault"
-      }
-    }
-  }
-}
-```
-
-Or to use local source (no PyPI needed):
+Global JSON (`~/.claude/settings.json`):
 
 ```json
 {
@@ -258,7 +160,7 @@ Or to use local source (no PyPI needed):
       "command": "python3",
       "args": ["/path/to/moodle-mcp/scripts/moodle_mcp_local_launch.py"],
       "env": {
-        "MOODLE_URL": "https://your-moodle-url/webservice/rest/server.php",
+        "MOODLE_URL": "https://your-moodle/webservice/rest/server.php",
         "MOODLE_TOKEN": "your_token_here"
       }
     }
@@ -266,29 +168,13 @@ Or to use local source (no PyPI needed):
 }
 ```
 
-### Verify
-
-```bash
-claude mcp list
-```
-
-In a Claude Code session: ask `"list my Moodle courses"` — it should call `get_my_courses`.
-
----
-
-## 🤖 OpenCode
-
-OpenCode reads MCP config from `~/.config/opencode/config.json` or a project-level `opencode.json`.
-
-### Auto-configure
+### OpenCode
 
 ```bash
 bash scripts/install-mcp.sh --agent opencode
 ```
 
-### Manual configure
-
-Edit `~/.config/opencode/config.json`:
+`~/.config/opencode/config.json`:
 
 ```json
 {
@@ -297,27 +183,17 @@ Edit `~/.config/opencode/config.json`:
       "command": "python3",
       "args": ["/path/to/moodle-mcp/scripts/moodle_mcp_local_launch.py"],
       "environment": {
-        "MOODLE_URL": "https://your-moodle-url/webservice/rest/server.php",
-        "MOODLE_TOKEN": "your_token_here",
-        "MOODLE_MY_CLASS": "Pagi C",
-        "OBSIDIAN_VAULT_PATH": "/home/<you>/Obsidian Vault"
+        "MOODLE_URL": "https://your-moodle/webservice/rest/server.php",
+        "MOODLE_TOKEN": "your_token_here"
       }
     }
   }
 }
 ```
 
-### Verify
+### Claude Desktop / Cursor
 
-```bash
-opencode run "list all my Moodle courses"
-```
-
----
-
-## 🖥️ Claude Desktop / Cursor
-
-Go to **Claude → Settings → Developer → Edit Config** and open `claude_desktop_config.json`:
+Add to `claude_desktop_config.json`:
 
 ```json
 {
@@ -326,7 +202,7 @@ Go to **Claude → Settings → Developer → Edit Config** and open `claude_des
       "command": "uvx",
       "args": ["moodle-mcp"],
       "env": {
-        "MOODLE_URL": "https://your-moodle-url/webservice/rest/server.php",
+        "MOODLE_URL": "https://your-moodle/webservice/rest/server.php",
         "MOODLE_TOKEN": "your_token_here"
       }
     }
@@ -334,75 +210,162 @@ Go to **Claude → Settings → Developer → Edit Config** and open `claude_des
 }
 ```
 
-Restart Claude Desktop. The Moodle tools will appear in the tool picker.
+Restart the desktop app — tools appear in the picker.
 
 ---
 
-## 🔌 Advanced: Local Source (No PyPI)
+## Tools
 
-To use the cloned repo directly (useful for development or custom forks):
+40 tools across 7 groups. Call them by name from any connected agent (e.g. *"list my Moodle courses"* → `get_my_courses`).
 
-```bash
-# From the repo root, install in editable mode
-uv pip install -e .
+<details>
+<summary><strong>Courses & Content (6)</strong></summary>
 
-# Then use the local launcher script in MCP configs:
-# command: python3
-# args: ["/path/to/moodle-mcp/scripts/moodle_mcp_local_launch.py"]
+| Tool | Description |
+|---|---|
+| `get_my_courses` | Enrolled courses |
+| `get_course_content` | Sections & modules for a course |
+| `search_course_materials` | Search across all materials |
+| `get_course_announcements` | News forum announcements |
+| `get_recent_activity` | Recent activity since timestamp |
+| `get_course_updates` | New materials/announcements |
+
+</details>
+
+<details>
+<summary><strong>Assignments & Deadlines (12)</strong></summary>
+
+| Tool | Description |
+|---|---|
+| `get_assignments` | Assignments (class-slot filtered) |
+| `get_assignment_status` | Submission & grading status |
+| `get_upcoming_deadlines` | Deadlines sorted by due date |
+| `get_overdue_assignments` | Past-due, unsubmitted |
+| `get_actionable_tasks` | Prioritized urgency list |
+| `analyze_assignment` | Status + requirements + materials |
+| `extract_assignment_requirements` | Deliverables & criteria |
+| `find_relevant_materials` | Content relevant to assignment |
+| `decompose_task` | Subtasks with critical path |
+| `create_implementation_plan` | Timeline, resources, milestones |
+| `submit_assignment_text` | Submit text answer |
+| `get_assignment_feedback` | Feedback & rubric results |
+
+</details>
+
+<details>
+<summary><strong>Grades & Progress (5)</strong></summary>
+
+| Tool | Description |
+|---|---|
+| `get_grades` | Overview or per-course detail |
+| `get_course_progress` | Completion progress |
+| `get_course_health` | Health check (progress + grades + overdue) |
+| `get_study_load` | Assignment distribution by week |
+| `get_submission_status_detail` | Detailed submission & feedback |
+
+</details>
+
+<details>
+<summary><strong>Calendar & Completion (4)</strong></summary>
+
+| Tool | Description |
+|---|---|
+| `get_upcoming_events` | Upcoming Moodle events |
+| `create_calendar_event` | Create H-2 reminder |
+| `get_activity_completion` | Completion status |
+| `mark_activity_complete` | Mark activity complete |
+
+</details>
+
+<details>
+<summary><strong>Overviews & Q&A (5)</strong></summary>
+
+| Tool | Description |
+|---|---|
+| `semester_dashboard` | Courses + deadlines + grades |
+| `daily_briefing` | Overdue, today, recent grades |
+| `weekly_review` | Submitted, graded, overdue, progress |
+| `ask_moodle` | Natural language routing |
+| `get_course_updates` | Course change detection |
+
+</details>
+
+<details>
+<summary><strong>Obsidian & Downloads (6)</strong></summary>
+
+| Tool | Description |
+|---|---|
+| `sync_moodle_to_obsidian` | Full vault sync (auto-archive on semester rollover) |
+| `export_deadlines_to_obsidian` | Deadlines only |
+| `export_course_outline` | Course outline as note |
+| `list_course_material_files` | List downloadable files |
+| `download_course_materials` | Download to `Materials/` |
+| `download_assignment_attachments` | Download assignment files |
+
+</details>
+
+> [!TIP]
+> Try: *"what's due this week?"* → `get_upcoming_deadlines`, *"analyze tugas basis data"* → `analyze_assignment`, *"sync ke Obsidian"* → `sync_moodle_to_obsidian`.
+
+---
+
+## Obsidian Sync
+
+Sync creates notes under `Academic/Moodle` in your vault:
+
+```
+Obsidian Vault/Academic/
+  Moodle/                    ← current semester (always up-to-date)
+    .semester_courses.json   ← hidden state (course IDs)
+    Dashboard.md
+    Deadlines.md
+    Grades.md
+    Courses/
+  Archive/
+    Semester-2026-07/        ← auto-created on rollover
+      Dashboard.md
+      Courses/
+      Archive-README.md
 ```
 
-The launcher automatically sets `PYTHONPATH` so the local `src/` is used instead of the installed package.
+**Semester auto-archive** triggers when >50% of course IDs change (or all are new). A single-course swap is ignored.
+
+```bash
+PYTHONPATH=src python - <<'PY'
+from moodle_mcp import api
+print(api.sync_moodle_to_obsidian())
+PY
+```
 
 ---
 
-## 🛡️ Security Notes
+## Security Notes
 
-- **Never commit your `.env` file.** It contains your Moodle token which grants full API access.
-- Tokens are loaded server-side — they are never sent to the AI model directly.
-- The `.env` file is in `.gitignore` by default.
-- For CI/CD, inject `MOODLE_URL` and `MOODLE_TOKEN` as environment secrets.
+> [!CAUTION]
+> Your Moodle token grants full API access as your user. Treat it like a password.
 
----
-
-## 📖 API Reference
-
-Full Moodle Web Service API: [Moodle Dev Docs](https://docs.moodle.org/dev/Web_service_API_functions)
+- Tokens are loaded server-side and never sent to the model.
+- Inject `MOODLE_URL` / `MOODLE_TOKEN` as environment secrets in CI.
+- `moodle.py` uses browser-like `User-Agent` + POST for Cloudflare compatibility.
 
 ---
 
-## 🤝 Contributing
+## Acknowledgements
 
-1. Fork the repo
-2. Create a feature branch
-3. Write tests (TDD preferred — run `PYTHONPATH=src python -m unittest discover -s tests -v`)
-4. Open a PR
-
----
-
-## 🙏 Acknowledgements
-
-This project is a fork of [loyaniu/moodle-mcp](https://github.com/loyaniu/moodle-mcp) with extended features. Full credit to all original contributors:
+Fork of [loyaniu/moodle-mcp](https://github.com/loyaniu/moodle-mcp) — credit to all original contributors:
 
 | Contributor | Role |
 |---|---|
-| [Zhonglin Niu](https://github.com/loyaniu) (loyaniu) | Original author — created the project, Moodle REST API integration, core MCP server |
-| [Vitalii Liudvynskyi](https://github.com/v-liudwinski) | Comprehensive Moodle student dashboard tools (semester overview, study load, health checks) |
-| [Daniel Sticker](https://github.com/stickerdaniel) | Bug fixes for course content paths and search; README improvements |
-| [Lawrence Sinclair](https://github.com/lwsinclair) | MseeP.ai security assessment badge |
+| [Zhonglin Niu](https://github.com/loyaniu) | Original author, Moodle REST integration, core server |
+| [Vitalii Liudvynskyi](https://github.com/v-liudwinski) | Dashboard, study load, health checks |
+| [Daniel Sticker](https://github.com/stickerdaniel) | Course content & search fixes |
+| [Lawrence Sinclair](https://github.com/lwsinclair) | Security assessment badge |
 
-### Additions in this fork
+**Additions in this fork**
 
-- **Phase 2** — Obsidian sync (`sync_moodle_to_obsidian`, `export_deadlines_to_obsidian`, `export_course_outline`)
-- **Phase 3** — Material downloads (`list_course_material_files`, `download_course_materials`, `download_assignment_attachments`)
-- **Phase 4** — Assignment submission and feedback tools
-- **Phase 6** — Calendar events and activity completion tracking
-- **Polibatam class-slot filter** — regex-based multi-class assignment filtering (`MOODLE_MY_CLASS`)
-- **Concurrent fetch** — 10× speedup for actionable tasks via ThreadPoolExecutor
-- **Semester auto-archive** — detects course rollover and archives the previous semester's Obsidian notes automatically
-- **Universal install script** — one-command setup for Hermes, Claude Code, and OpenCode
-
----
-
-## 📄 License
-
-MIT
+- Obsidian sync + semester auto-archive
+- Material downloads & assignment attachments
+- Submission & feedback tools, calendar & completion
+- Polibatam class-slot filter (`MOODLE_MY_CLASS`)
+- Concurrent fetch (~10× faster actionable tasks)
+- Universal `install-mcp.sh` for Hermes / Claude Code / OpenCode
