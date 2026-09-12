@@ -80,6 +80,36 @@ PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
 2. Find the row with **Moodle mobile web service** in `Service`
 3. Copy the token
 
+> [!NOTE]
+> Some sites hide or disable `user/managetoken.php` (Polibatam does), leaving no UI to read or
+> regenerate the token. Use `scripts/get_moodle_token.py`, which goes through the official
+> mobile web service instead:
+>
+> ```bash
+> # interactive — prompts for the password and never echoes or logs it
+> python scripts/get_moodle_token.py --site https://learning.polibatam.ac.id --username <you>
+>
+> # verify a token you already have
+> python scripts/get_moodle_token.py --site https://learning.polibatam.ac.id --verify "$MOODLE_TOKEN"
+>
+> # fetch, verify, then write it into every Hermes .env that already defines MOODLE_TOKEN
+> python scripts/get_moodle_token.py --username <you> --hermes
+> ```
+>
+> Two strategies, both token-verified via `core_webservice_get_site_info` before reporting success:
+>
+> | Strategy | How it works | Use when |
+> |---|---|---|
+> | `login-token` | `POST /login/token.php` with `service=moodle_mobile_app` | native (non-SSO) account, works in one request |
+> | `mobile-launch` | log in, then decode the `moodlemobile://token=<base64>` redirect from `admin/tool/mobile/launch.php` | `login/token.php` is blocked; also works with a browser session |
+>
+> `--method auto` (default) tries `login-token` first and falls back to `mobile-launch`. For
+> SSO-only accounts, log in with your browser, copy the `MoodleSession` cookie value and pass it
+> with `--cookie`. Other flags: `--write-env PATH` (repeatable), `--quiet` (token only, for
+> piping), `--json`. Exit codes: `0` success, `1` auth/API failure, `2` usage error.
+>
+> Restart the gateway afterwards — a running MCP server keeps the environment it was spawned with.
+
 ### 2. Create `.env`
 
 ```bash
@@ -347,6 +377,9 @@ PY
 - Tokens are loaded server-side and never sent to the model.
 - Inject `MOODLE_URL` / `MOODLE_TOKEN` as environment secrets in CI.
 - `moodle.py` uses browser-like `User-Agent` + POST for Cloudflare compatibility.
+- `scripts/get_moodle_token.py` accepts the password only via `getpass` prompt, `--password-stdin`
+  or `--password`; it never writes it to disk and never logs it. Token values are reported as
+  `len=<n> sha256:<10>` fingerprints unless you ask for the token itself.
 
 ---
 
